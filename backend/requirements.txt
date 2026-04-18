@@ -1,0 +1,10 @@
+flask
+flask-socketio
+flask-cors
+paho-mqtt
+scikit-learn
+xgboost
+pandas
+numpy
+joblib
+python-dotenv
