@@ -27,27 +27,31 @@ MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 MQTT_TLS      = os.environ.get("MQTT_TLS",      "false").lower() == "true"
 MQTT_TOPIC    = "resqnet/sensors"
 
-BASE_LAT = 23.0225   # Ahmedabad, India
-BASE_LON = 72.5714
+BASE_LAT = 20.5937   # Central India
+BASE_LON = 78.9629
 
 PUBLISH_INTERVAL      = 2    # seconds between each publish
-SOS_GUARANTEED_EVERY  = 30   # seconds — DEVICE_002 & DEVICE_004 force SOS
-SOS_RANDOM_PROB       = 0.10 # 10% random SOS chance for all devices
+SOS_GUARANTEED_EVERY  = 30   # seconds — forced SOS
+SOS_RANDOM_PROB       = 0.01
 
-DEVICES = [
-    "DEVICE_001",
-    "DEVICE_002",
-    "DEVICE_003",
-    "DEVICE_004",
-    "DEVICE_005",
-]
+DEVICES = [f"DEVICE_{i:03d}" for i in range(1, 151)]
 
-GUARANTEED_SOS_DEVICES = {"DEVICE_002", "DEVICE_004"}
+GUARANTEED_SOS_DEVICES = {"DEVICE_005", "DEVICE_012", "DEVICE_024", "DEVICE_042", "DEVICE_091", "DEVICE_135"}
 
 
 # ──────────────────────────────────────────────
 # Per-device mutable state
 # ──────────────────────────────────────────────
+INDIA_REGIONS = [
+    (8.5, 14.5, 76.0, 79.5),   # South
+    (14.5, 19.5, 74.0, 80.0),  # Deccan
+    (20.0, 24.0, 70.0, 74.0),  # West
+    (22.0, 26.5, 75.0, 82.0),  # Central
+    (28.0, 31.5, 74.5, 78.5),  # North
+    (20.0, 25.5, 83.5, 87.5),  # East
+    (25.5, 27.5, 90.0, 94.5)   # North-East
+]
+
 class DeviceState:
     """Holds slowly-evolving sensor state for one device."""
 
@@ -56,6 +60,10 @@ class DeviceState:
         self.flood_level = round(random.uniform(0.0, 1.5), 2)
         self.battery     = random.randint(85, 100)
         self.start_time  = time.time()
+        
+        region = random.choice(INDIA_REGIONS)
+        self.base_lat = random.uniform(region[0], region[1])
+        self.base_lon = random.uniform(region[2], region[3])
 
     def next_flood_level(self) -> float:
         delta = random.uniform(0.0, 0.15)
@@ -82,8 +90,8 @@ class DeviceState:
     def build_payload(self) -> dict:
         return {
             "device_id"   : self.device_id,
-            "lat"         : round(BASE_LAT + random.uniform(-0.05, 0.05), 6),
-            "lon"         : round(BASE_LON + random.uniform(-0.05, 0.05), 6),
+            "lat"         : round(self.base_lat + random.uniform(-0.005, 0.005), 6),
+            "lon"         : round(self.base_lon + random.uniform(-0.005, 0.005), 6),
             "sos_active"  : self.sos_active(),
             "flood_level" : self.next_flood_level(),
             "air_quality" : self.next_air_quality(),

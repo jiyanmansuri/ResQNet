@@ -8,8 +8,8 @@ import 'leaflet/dist/leaflet.css';
 // Constants
 // ─────────────────────────────────────────────
 const API_BASE   = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const MAP_CENTER = [23.0225, 72.5714];
-const MAX_INCIDENTS = 100;
+const MAP_CENTER = [20.5937, 78.9629];
+const MAX_INCIDENTS = 300;
 
 const SEVERITY_CONFIG = {
   Critical: { color: '#ef4444', radius: 12, bg: '#450a0a', border: '#ef4444' },
@@ -166,6 +166,23 @@ const S = {
   /* ── Popup ── */
   popup: { fontSize: 12, lineHeight: 1.6, minWidth: 180 },
   popupTitle: { fontWeight: 700, fontSize: 14, marginBottom: 4 },
+
+  /* ── Filter Tabs & Action Buttons ── */
+  tabGroup: { display: 'flex', gap: 6, background: '#1e293b', padding: 4, borderRadius: 8 },
+  tabBtn: (active) => ({
+    background: active ? '#334155' : 'transparent',
+    color: active ? '#cbd5e1' : '#64748b',
+    border: 'none', padding: '4px 10px', borderRadius: 6,
+    fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: '0.2s',
+  }),
+  actionRow: { marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' },
+  actionBtn: (dispatched) => ({
+    background: dispatched ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+    color: dispatched ? '#4ade80' : '#ef4444',
+    border: `1px solid ${dispatched ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+    padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+    cursor: dispatched ? 'default' : 'pointer', transition: '0.2s', textTransform: 'uppercase', letterSpacing: 0.5
+  }),
 };
 
 // ─────────────────────────────────────────────
@@ -205,8 +222,10 @@ function StatCard({ label, value, accent, sub, pulse }) {
   );
 }
 
-function IncidentCard({ incident, isNew }) {
+function IncidentCard({ incident, isNew, isDispatched, onDispatch }) {
   const sev = incident.severity || 'Stable';
+  const isHighPriority = sev === 'Critical' || sev === 'Serious';
+  
   return (
     <div style={S.incidentCard(sev, isNew)}>
       <div style={S.incidentTop}>
@@ -248,6 +267,19 @@ function IncidentCard({ incident, isNew }) {
       ) : (
         <div style={{ marginTop: 4, fontSize: 10, color: '#334155' }}>
           lat {(incident.lat || 0).toFixed(4)}, lon {(incident.lon || 0).toFixed(4)}
+        </div>
+      )}
+      
+      {isHighPriority && (
+        <div style={S.actionRow}>
+          <button 
+            style={S.actionBtn(isDispatched)}
+            onClick={() => {
+              if (!isDispatched) onDispatch(incident);
+            }}
+          >
+            {isDispatched ? '✓ Units Dispatched' : 'Dispatch Units'}
+          </button>
         </div>
       )}
     </div>
@@ -295,6 +327,8 @@ export default function App() {
   const [stats, setStats]           = useState({ total: 0, critical: 0, serious: 0, stable: 0, active_sos: 0 });
   const [newIds, setNewIds]         = useState(new Set());
   const [connected, setConnected]   = useState(false);
+  const [feedFilter, setFeedFilter] = useState('All');
+  const [dispatchedIds, setDispatchedIds] = useState(new Set());
   const feedRef                     = useRef(null);
   const socketRef                   = useRef(null);
 
@@ -356,9 +390,6 @@ export default function App() {
           return next;
         });
       }, 3000);
-
-      // Auto-scroll feed to top
-      if (feedRef.current) feedRef.current.scrollTop = 0;
     });
 
     return () => socket.disconnect();
@@ -373,8 +404,24 @@ export default function App() {
     return Array.from(seen.values());
   }, [incidents]);
 
-  // ── Feed — last 20 for display ───────────────────────────────
-  const feedItems = incidents.slice(0, 20);
+  // ── Feed — Filter functionality ───────────────────────────────────────
+  const sortedUniqueIncidents = React.useMemo(() => {
+    const order = { 'Critical': 0, 'Serious': 1, 'Stable': 2 };
+    return [...mapMarkers].sort((a, b) => 
+      order[a.severity] - order[b.severity] || a.device_id.localeCompare(b.device_id)
+    );
+  }, [mapMarkers]);
+
+  const filteredIncidents = feedFilter === 'All' 
+    ? sortedUniqueIncidents 
+    : sortedUniqueIncidents.filter(i => i.severity === 'Critical' || i.severity === 'Serious');
+    
+  const feedItems = filteredIncidents.slice(0, 150);
+
+  const handleDispatch = useCallback((inc) => {
+    alert(`DISPATCH INITIATED:\nDeploying rescue units to Device (${inc.device_id})\nLat: ${inc.lat?.toFixed(4)}, Lon: ${inc.lon?.toFixed(4)}\nSeverity: ${inc.severity}`);
+    setDispatchedIds(prev => new Set(prev).add(inc.device_id));
+  }, []);
 
   // ─────────────────────────────────────────────
   return (
@@ -414,7 +461,7 @@ export default function App() {
           <div style={S.navLeft}>
             <span style={S.navLogo}>ResQNet</span>
             <span style={S.navBadge}>Live</span>
-            <span style={S.navSub}>Disaster Response Dashboard · Ahmedabad</span>
+            <span style={S.navSub}>Disaster Response Dashboard · India National View</span>
           </div>
           <div style={S.navRight}>
             <LiveClock />
@@ -466,11 +513,11 @@ export default function App() {
           {/* ── Map panel ─────────────────────────────────────── */}
           <div style={S.mapPane}>
             <div style={S.mapOverlay}>
-              📍 Ahmedabad Disaster Zone · {mapMarkers.length} active devices
+              📍 India National Map · {mapMarkers.length} active devices
             </div>
             <MapContainer
               center={MAP_CENTER}
-              zoom={12}
+              zoom={5}
               style={{ height: '100%', width: '100%' }}
               zoomControl={true}
             >
@@ -506,7 +553,21 @@ export default function App() {
           <div style={S.feedPane}>
             <div style={S.feedHeader}>
               <span style={S.feedTitle}>⚡ Live Incident Feed</span>
-              <span style={S.feedCount}>{feedItems.length} / 20</span>
+              <div style={S.tabGroup}>
+                <button 
+                  style={S.tabBtn(feedFilter === 'All')} 
+                  onClick={() => setFeedFilter('All')}
+                >
+                  All
+                </button>
+                <button 
+                  style={S.tabBtn(feedFilter === 'HighPriority')} 
+                  onClick={() => setFeedFilter('HighPriority')}
+                >
+                  High Priority
+                </button>
+              </div>
+              <span style={S.feedCount}>{feedItems.length} listed</span>
             </div>
 
             {feedItems.length === 0 ? (
@@ -521,13 +582,15 @@ export default function App() {
               </div>
             ) : (
               <div style={S.feedScroll} ref={feedRef}>
-                {feedItems.map((inc, i) => {
+                {feedItems.map((inc) => {
                   const id = `${inc.device_id}-${inc.timestamp}`;
                   return (
                     <IncidentCard
-                      key={`${id}-${i}`}
+                      key={inc.device_id}
                       incident={inc}
                       isNew={newIds.has(id)}
+                      isDispatched={dispatchedIds.has(inc.device_id)}
+                      onDispatch={handleDispatch}
                     />
                   );
                 })}
