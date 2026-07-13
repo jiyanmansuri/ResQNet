@@ -11,6 +11,13 @@ const API_BASE   = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const MAP_CENTER = [20.5937, 78.9629];
 const MAX_INCIDENTS = 300;
 
+/**
+ * Severity configuration for rendering leaflet markers and feed highlight cards.
+ * - color: Marker path boundary and text highlighting color
+ * - radius: Size of CircleMarker on map
+ * - bg: Dark themed background color for card flash warnings
+ * - border: Alert border color matching severity
+ */
 const SEVERITY_CONFIG = {
   Critical: { color: '#ef4444', radius: 12, bg: '#450a0a', border: '#ef4444' },
   Serious:  { color: '#f97316', radius: 9,  bg: '#431407', border: '#f97316' },
