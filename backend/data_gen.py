@@ -10,6 +10,7 @@ import random
 import threading
 import time
 from datetime import datetime, timezone
+from typing import List, Dict, Any, Set
 
 from dotenv import load_dotenv
 load_dotenv()  # load .env file if present
@@ -109,6 +110,7 @@ def on_connect(client: mqtt.Client, userdata, connect_flags, reason_code, proper
 
 
 def create_mqtt_client(device_id: str) -> mqtt.Client:
+    print(f"[MQTT][{device_id}] Initializing MQTT client...")
     client = mqtt.Client(CallbackAPIVersion.VERSION2, userdata={"device_id": device_id})
     client.on_connect = on_connect
 
@@ -120,8 +122,9 @@ def create_mqtt_client(device_id: str) -> mqtt.Client:
     try:
         client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
         client.loop_start()
+        print(f"[MQTT][{device_id}] Loop started successfully.")
     except Exception as exc:
-        print(f"[MQTT][{device_id}] Could not connect to broker: {exc}")
+        print(f"[MQTT][{device_id}] Connection error: {exc}")
     return client
 
 
