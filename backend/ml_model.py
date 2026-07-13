@@ -15,6 +15,7 @@ import pandas as pd
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from typing import Tuple, Dict, Any
 
 # ──────────────────────────────────────────────
 # Paths (relative to this file's directory)
@@ -155,7 +156,7 @@ _model    = None
 _features = None
 
 
-def _load_artefacts() -> tuple:
+def _load_artefacts() -> Tuple[Any, Any]:
     """Lazy-load model and feature list; raise if files are missing."""
     global _model, _features
 
@@ -176,7 +177,7 @@ def _load_artefacts() -> tuple:
     return _model, _features
 
 
-def predict(sensor_data: dict) -> dict:
+def predict(sensor_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Classify a single sensor reading into a severity level.
 
