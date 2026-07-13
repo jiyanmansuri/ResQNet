@@ -9,6 +9,7 @@ import os
 import sqlite3
 import threading
 from datetime import datetime, timezone
+from typing import Dict, Any, List
 
 from dotenv import load_dotenv
 load_dotenv()  # load .env file if present (local dev); Railway uses real env vars
@@ -90,8 +91,11 @@ def init_db() -> None:
     print(f"[DB] Initialised -> {DB_PATH}")
 
 
-def insert_incident(data: dict) -> None:
-    """Insert a single incident row. Thread-safe (each call opens its own connection)."""
+def insert_incident(data: Dict[str, Any]) -> None:
+    """
+    Insert a single incident row into SQLite.
+    Thread-safe (each call opens its own connection).
+    """
     with get_db() as conn:
         conn.execute(
             """
