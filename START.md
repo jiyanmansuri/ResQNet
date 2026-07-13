@@ -97,7 +97,7 @@ cd backend
 python data_gen.py
 ```
 
-> ✅ You should see 5 device threads printing sensor data every 2 seconds:
+> ✅ You should see 150 device threads printing sensor data every 2 seconds:
 > ```
 > [DEVICE_001]    OK  | flood= 1.2 m | AQI=143 | bat= 98% | ...
 > [DEVICE_002] 🚨 SOS | flood= 2.4 m | AQI= 88 | bat=100% | ...
@@ -167,7 +167,7 @@ ResQnet/
   backend/
     app.py           ← Flask server (MQTT + SocketIO + REST + SQLite)
     ml_model.py      ← XGBoost training & inference engine
-    data_gen.py      ← IoT device simulator (5 threads)
+    data_gen.py      ← IoT device simulator (150 threads)
     mqtt_client.py   ← (reserved for future standalone MQTT utilities)
     requirements.txt ← Python dependencies
     model.pkl        ← generated after training
