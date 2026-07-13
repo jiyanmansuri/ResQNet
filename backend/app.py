@@ -124,18 +124,32 @@ def on_connect(client: mqtt.Client, userdata, connect_flags, reason_code, proper
         print(f"[MQTT] Connection failed ({reason_code})")
 
 
+def validate_telemetry(payload: Dict[str, Any]) -> bool:
+    """Validate that required fields are present in the incoming payload."""
+    required = ["device_id", "lat", "lon"]
+    for field in required:
+        if field not in payload:
+            return False
+    return True
+
+
 def on_message(client: mqtt.Client, userdata, msg: mqtt.MQTTMessage) -> None:
     """
     Called on every sensor message:
       1. Parse JSON
-      2. Run ML inference
-      3. Persist to SQLite
-      4. Emit Socket.IO event to all connected clients
+      2. Validate telemetry
+      3. Run ML inference
+      4. Persist to SQLite
+      5. Emit Socket.IO event to all connected clients
     """
     try:
         payload = json.loads(msg.payload.decode("utf-8"))
     except json.JSONDecodeError as exc:
         print(f"[MQTT] Bad JSON payload: {exc}")
+        return
+
+    if not validate_telemetry(payload):
+        print(f"[MQTT] Validation failed: missing required fields in payload.")
         return
 
     # ── ML inference ─────────────────────────────────────────────
