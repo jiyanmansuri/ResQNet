@@ -189,6 +189,10 @@ const S = {
 // Sub-components
 // ─────────────────────────────────────────────
 
+/**
+ * Renders a live ticking clock showing current IST time.
+ * @returns {React.ReactElement} Live clock text span
+ */
 function LiveClock() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -202,6 +206,15 @@ function LiveClock() {
   );
 }
 
+/**
+ * Displays status cards on the dashboard header.
+ * @param {object} props
+ * @param {string} props.label - Card title
+ * @param {number|string} props.value - Statistical value
+ * @param {string} props.accent - Visual border color
+ * @param {string} [props.sub] - Optional subtext
+ * @param {boolean} [props.pulse] - Visual red dot warning pulse
+ */
 function StatCard({ label, value, accent, sub, pulse }) {
   return (
     <div style={S.card(accent)}>
@@ -222,6 +235,14 @@ function StatCard({ label, value, accent, sub, pulse }) {
   );
 }
 
+/**
+ * Renders individual incident details as a card in the side feed panel.
+ * @param {object} props
+ * @param {object} props.incident - The telemetry incident payload
+ * @param {boolean} props.isNew - Flag indicating a fresh incident to flash visual highlight
+ * @param {boolean} props.isDispatched - State indicating rescue units have been sent
+ * @param {function} props.onDispatch - Trigger callback for starting unit dispatching
+ */
 function IncidentCard({ incident, isNew, isDispatched, onDispatch }) {
   const sev = incident.severity || 'Stable';
   const isHighPriority = sev === 'Critical' || sev === 'Serious';
